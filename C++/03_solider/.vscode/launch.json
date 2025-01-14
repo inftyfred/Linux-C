@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug My Program",  // 调试配置名称
+            "type": "cppdbg",            // 调试器类型（C++ 调试器）
+            "request": "launch",         // 启动调试
+            "program": "${workspaceFolder}/build/solider",  // 可执行文件路径
+            "args": [],                  // 传递给程序的命令行参数
+            "stopAtEntry": false,        // 是否在程序入口处停止
+            "cwd": "${workspaceFolder}", // 工作目录
+            "environment": [],           // 环境变量
+            "externalConsole": false,    // 是否使用外部控制台
+            "MIMode": "gdb",             // 调试器模式（GDB 或 LLDB）
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "CMake & Make: Build All",  // 调试前运行的任务
+            "miDebuggerPath": "/usr/bin/gdb",  // GDB 路径（根据系统调整）
+            "logging": {
+                "trace": true,           // 启用调试日志
+                "traceResponse": true,
+                "engineLogging": true
+            }
+        }
+    ]
+}

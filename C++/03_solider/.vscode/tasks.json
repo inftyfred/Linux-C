@@ -1,0 +1,55 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CMake: Configure",  // 任务名称
+            "type": "shell",              // 任务类型为 shell 命令
+            "command": "cmake",           // 运行的命令
+            "args": [
+                "-S", ".",                // 源代码目录（当前目录）
+                "-B", "build",            // 构建目录（build 文件夹）
+                "-DCMAKE_BUILD_TYPE=Debug" // 可选：设置构建类型
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"  // 工作目录为项目根目录
+            },
+            "problemMatcher": [],           // 问题匹配器（可选）
+            "group": {
+                "kind": "build",            // 任务分组为构建任务
+                "isDefault": true           // 设置为默认构建任务
+            },
+            "detail": "Run CMake to configure the project."  // 任务描述
+        },
+        {
+            "label": "Make: Build",         // 任务名称
+            "type": "shell",                // 任务类型为 shell 命令
+            "command": "make",              // 运行的命令
+            "args": [
+                "-j4"                       // 使用 4 个线程并行编译
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"  // 工作目录为 build 文件夹
+            },
+            "problemMatcher": [],           // 问题匹配器（可选）
+            "group": {
+                "kind": "build",            // 任务分组为构建任务
+                "isDefault": true           // 设置为默认构建任务
+            },
+            "detail": "Run Make to build the project."  // 任务描述
+        },
+        {
+            "label": "CMake & Make: Build All",  // 任务名称
+            "dependsOrder": "sequence",          // 按顺序运行依赖任务
+            "dependsOn": [                       // 依赖的任务
+                "CMake: Configure",
+                "Make: Build"
+            ],
+            "problemMatcher": [],                // 问题匹配器（可选）
+            "group": {
+                "kind": "build",                 // 任务分组为构建任务
+                "isDefault": true                // 设置为默认构建任务
+            },
+            "detail": "Run CMake and Make to build the project."  // 任务描述
+        }
+    ]
+}

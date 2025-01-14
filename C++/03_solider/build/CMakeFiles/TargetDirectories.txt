@@ -1,0 +1,3 @@
+/home/infty/c&c++_prj/C++/03_solider/build/CMakeFiles/solider.dir
+/home/infty/c&c++_prj/C++/03_solider/build/CMakeFiles/edit_cache.dir
+/home/infty/c&c++_prj/C++/03_solider/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,1 @@
+/usr/bin/c++  -g -O2 -Wall -g CMakeFiles/solider.dir/main.cpp.o CMakeFiles/solider.dir/src/Gun.cpp.o CMakeFiles/solider.dir/src/solider.cpp.o -o solider 
