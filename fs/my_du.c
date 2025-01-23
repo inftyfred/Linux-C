@@ -9,7 +9,7 @@
 #define PATHSIZE 1024
 
 //是否构成循环
-path_noloop(const char *path)
+static int path_noloop(const char *path)
 {
     char *pos;
     pos = strrchr(path,'/');//找到最右边的字符位置
@@ -27,11 +27,11 @@ path_noloop(const char *path)
 
 static int64_t mydu(const char *path)
 {
-    struct stat statres;
-    char nextpath[PATHSIZE];
+    static struct stat statres;     //static优化 没有跨越递归可以优化
+    static char nextpath[PATHSIZE];
     glob_t globres;
     int ret,i;
-    int64_t sum;
+    int64_t sum=0;
 
 
     ret = lstat(path,&statres);
@@ -50,21 +50,28 @@ static int64_t mydu(const char *path)
     //再次调用mydu递归
     strncpy(nextpath,path,PATHSIZE);
     strncat(nextpath,"/*",PATHSIZE);//非隐藏文件
-    glob(nextpath,0,NULL,&globres);
+    if (glob(nextpath,0,NULL,&globres) < 0) {
+        fprintf(stderr,"glob()");
+        exit(1);
+    }
 
     strncpy(nextpath,path,PATHSIZE);
     strncat(nextpath,"/.*",PATHSIZE);//隐藏文件
-    glob(nextpath,GLOB_APPEND,NULL,&globres);//追加
+    if (glob(nextpath,GLOB_APPEND,NULL,&globres) < 0) {
+        fprintf(stderr,"glob()");
+        exit(1);
+    }
 
-    sum = 0;
+    sum = statres.st_blocks;//加上目录文件的大小
     for(i=0; i<globres.gl_pathc; i++)
     {
         if(path_noloop(globres.gl_pathv[i]))
             sum += mydu(globres.gl_pathv[i]);
     }
-    sum += statres.st_blocks;//加上目录文件的大小
 
-    return sum/2;//转换成KB
+    globfree(&globres);
+
+    return sum;
 }
 
 int main(int argc, char **argv)
@@ -75,8 +82,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    printf("%lld\n",mydu(argv[1]));
-
+    printf("%lld\n",mydu(argv[1])/2);//转换为KB
 
     exit(0);
 }
