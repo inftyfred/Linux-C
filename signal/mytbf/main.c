@@ -8,7 +8,7 @@
 #include <errno.h>
 #include "mytbf.h"
 
-#define CPS 20 //每次打印数量
+#define CPS 30 //每次打印数量
 #define BUFFSIZE 1024
 #define BURST 100  //令牌桶上限
 

@@ -4,22 +4,21 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <unistd.h>
 #include <errno.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #define CPS 10 //每次打印数量
 #define BUFFSIZE CPS
-#define BURST 100  //令牌桶上限
 
-static volatile sig_atomic_t token = 0;//sig_atomic_t:保证token--的操作是一条指令完成的（原子操作）
+static volatile int loop = 0;
 
 static void alrm_handler(int s)
 {
-	alarm(1);//alarm链
-	token++;
-    if(token > BURST)
-        token = BURST;
+	//alarm(1);//alarm链
+	loop = 1;
 }
+
 
 int main(int argc, char **argv)
 {
@@ -27,6 +26,7 @@ int main(int argc, char **argv)
     int fd1, fd2=1;
     char buf[BUFFSIZE];
     int len, ret;
+    struct itimerval itv;
 
     if(argc < 2)
     {
@@ -35,7 +35,16 @@ int main(int argc, char **argv)
     }
 
 	signal(SIGALRM,alrm_handler);
-	alarm(1);
+	//alarm(1);
+    itv.it_interval.tv_sec = 1;
+    itv.it_interval.tv_usec = 0;
+    itv.it_value.tv_sec = 1;
+    itv.it_value.tv_usec = 0;
+    if(setitimer(ITIMER_REAL,&itv,NULL) < 0)
+    {
+        perror("setitimer()");
+        exit(1);
+    }
 
     fd1 = open(argv[1], O_RDONLY);//只读打开
     if(fd1 < 0)
@@ -43,20 +52,25 @@ int main(int argc, char **argv)
         perror("open:");
         exit(1);
     }
+    if(fd2 < 0)
+    {
+        perror("open:");
+        exit(1);
+    }
 
     while(1)
     {
-		while(token <= 0)
+		while(!loop)
 			pause();//等待信号，防止盲等
 
-		token--;
+		loop = 0;
 
-        while((len = read(fd1,buf,BUFFSIZE)) < 0)
+        while((len = read(fd1,buf,BUFFSIZE))< 0)
         {
 			if(errno == EINTR)
 				continue;//表示由信号打断，重新执行read操作
             perror("read:（）");
-            goto out;
+            break;
         }
         if(len == 0)
             break;
@@ -69,7 +83,7 @@ int main(int argc, char **argv)
         }
     }
 
-out:
     close(fd1);
+
     exit(0);
 }

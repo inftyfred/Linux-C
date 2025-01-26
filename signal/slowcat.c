@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <unistd.h>
 #include <errno.h>
 
 #define CPS 10 //每次打印数量
@@ -27,7 +28,7 @@ int main(int argc, char **argv)
 
     if(argc < 2)
     {
-        fprintf(stderr,"Usage:%s <srcfile> <cpfile>",argv[0]);
+        fprintf(stderr,"Usage:%s <srcfile> <cpfile>\n",argv[0]);
         exit(1);
     }
 
@@ -53,12 +54,12 @@ int main(int argc, char **argv)
 
 		loop = 0;
 
-        while(len = read(fd1,buf,BUFFSIZE) < 0)
+        while((len = read(fd1,buf,BUFFSIZE)) < 0)
         {
 			if(errno == EINTR)
 				continue;//表示由信号打断，重新执行read操作
             perror("read:（）");
-            break;
+            goto out;
         }
         if(len == 0)
             break;
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
         }
     }
 
+out:
     close(fd1);
-
     exit(0);
 }
