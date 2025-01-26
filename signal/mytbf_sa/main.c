@@ -4,21 +4,15 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <errno.h>
-#include <sys/time.h>
 #include <unistd.h>
+#include <errno.h>
+#include "mytbf.h"
 
-#define CPS 10 //每次打印数量
-#define BUFFSIZE CPS
+#define CPS 30 //每次打印数量
+#define BUFFSIZE 1024
+#define BURST 100  //令牌桶上限
 
-static volatile int loop = 0;
-
-static void alrm_handler(int s)
-{
-	//alarm(1);//alarm链
-	loop = 1;
-}
-
+static volatile int token = 0;
 
 int main(int argc, char **argv)
 {
@@ -26,7 +20,8 @@ int main(int argc, char **argv)
     int fd1, fd2=1;
     char buf[BUFFSIZE];
     int len, ret;
-    struct itimerval itv;
+    int size;
+    mytbf_st *tbf;
 
     if(argc < 2)
     {
@@ -34,15 +29,10 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-	signal(SIGALRM,alrm_handler);
-	//alarm(1);
-    itv.it_interval.tv_sec = 3;
-    itv.it_interval.tv_usec = 0;
-    itv.it_value.tv_sec = 1;
-    itv.it_value.tv_usec = 0;
-    if(setitimer(ITIMER_REAL,&itv,NULL) < 0)
+	tbf = mytbf_init(CPS,BURST);
+    if(tbf == NULL)
     {
-        perror("setitimer()");
+        fprintf(stderr,"mytbf_init error\n");
         exit(1);
     }
 
@@ -52,28 +42,30 @@ int main(int argc, char **argv)
         perror("open:");
         exit(1);
     }
-    if(fd2 < 0)
-    {
-        perror("open:");
-        exit(1);
-    }
 
     while(1)
     {
-		while(!loop)
-			pause();//等待信号，防止盲等
+        size = mytbf_fetchtoken(tbf,BUFFSIZE);//能够拿到的token数
+        if(size <= 0)
+        {
+            fprintf(stderr,"mytbf_fetchtoken():%s\n",strerror(-size));
+            exit(1);
+        }
 
-		loop = 0;
-
-        while((len = read(fd1,buf,BUFFSIZE))< 0)
+        while((len = read(fd1,buf,size)) < 0)
         {
 			if(errno == EINTR)
 				continue;//表示由信号打断，重新执行read操作
             perror("read:（）");
-            break;
+            goto out;
         }
         if(len == 0)
             break;
+
+        if(size - len > 0)
+        {
+            mytbf_returntoken(tbf,size-len);//归还token
+        }
 
         ret = write(fd2,buf,len);
         if(ret < 0)
@@ -83,7 +75,8 @@ int main(int argc, char **argv)
         }
     }
 
+out:
+    mytbf_destroy(tbf);
     close(fd1);
-
     exit(0);
 }
