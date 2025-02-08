@@ -5,6 +5,7 @@
         "mytbf.h": "c",
         "siginfo.h": "c",
         "signal-defs.h": "c",
-        "sigset_t.h": "c"
+        "sigset_t.h": "c",
+        "pthread.h": "c"
     }
 }
