@@ -6,7 +6,7 @@
 #include <string.h>
 
 /*
-筛选质数
+筛选质数 
 */
 #define LEFT  30000000
 #define RIGHT 30000200

@@ -4,7 +4,7 @@
 
 #include "mysem.h"
 
-//定义结构体
+//定义结构体   
 struct mysem_st
 {
     int value;
