@@ -69,14 +69,12 @@ static void func_add(void)
         exit(1);
     }
 
-    //lockf(fd, F_LOCK, 0);
     P();//取一个资源量
     fgets(linebuf, LINESIZE, fp);
     fseek(fp, 0, SEEK_SET);//定位到文件首
     fprintf(fp, "%d\n", atoi(linebuf)+1);
     sleep(1);
     fflush(fp); //刷新流，保证文件写入成功
-    //lockf(fd, F_ULOCK, 0);
     V();//增加一个资源量
     
     fclose(fp);//关闭文件
