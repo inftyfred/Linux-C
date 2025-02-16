@@ -28,8 +28,8 @@ int main()
 
     while(1)
     {   //-sizeof(long)
-        if(msgrcv(msgid, &rbuf, sizeof(rbuf), 0, 0) < 0)
-        {   //柔性数组./re  
+        if(msgrcv(msgid, &rbuf, sizeof(rbuf)-sizeof(long), 0, 0) < 0)
+        {   //柔性数组
             perror("msgrcv");
             exit(1);
         }

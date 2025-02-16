@@ -31,7 +31,7 @@ int main()
     strcpy(sbuf.name, "fred");
     sbuf.math = rand() % 100;
     sbuf.chinese = rand() % 100;
-    if(msgsnd(msgid, &sbuf, sizeof(sbuf), 0) < 0) //- sizeof(long)
+    if(msgsnd(msgid, &sbuf, sizeof(sbuf)-sizeof(long), 0) < 0) //- sizeof(long)
     {
         perror("msgsnd()");
         exit(1);
