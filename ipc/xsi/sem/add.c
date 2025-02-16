@@ -35,7 +35,6 @@ static void P() //取资源量
             exit(1);
         }
     }
-
 }
 
 static void V() //还资源量
@@ -55,7 +54,6 @@ static void V() //还资源量
         }    
     }
 }
-
 
 static void func_add(void)
 {

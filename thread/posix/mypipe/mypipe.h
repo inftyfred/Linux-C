@@ -20,5 +20,4 @@ int mypipe_write(mypipe_t *, const void *buf, size_t size);
 int mypipe_destriy(mypipe_t *);
 
 
-
 #endif
