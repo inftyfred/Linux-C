@@ -9,6 +9,9 @@
 #include <sys/types.h>  
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <net/if.h>
+#include <netinet/ip.h>
+#include <arpa/inet.h>
 #include <getopt.h>
 #include <syslog.h>
 
@@ -26,6 +29,8 @@
  *  -I      指定网络设备
  *  -H      显示帮助
  */
+int serversd;
+struct sockaddr_in sndaddr;
 
  struct server_conf_st server_conf = {
     .rcvport = DEFAULT_RCVPROT, \
@@ -93,9 +98,9 @@ static int daemonize(void)
     return 0;
 }
 
-static void socket_init(void)
+static int socket_init(void)
 {
-    int serversd;
+    
     struct ip_mreqn mreq;
 
     serversd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -114,6 +119,13 @@ static void socket_init(void)
         exit(1);
     }
 
+    //bind
+
+    sndaddr.sin_family = AF_INET;
+    sndaddr.sin_port = htons(aoti(server_conf.rcvport));
+    inet_pton(AF_INET, server_conf.mgroup, &sndaddr.sin_addr.s_addr);
+
+    return 0;
 }
 
 
@@ -121,6 +133,9 @@ int main(int argc, char **argv)
 {
     int opt;
     struct sigaction sa, osa;
+    struct mlib_listentry_st *mlib_list;
+    int mlib_list_size;
+    int err;
 
     sa.sa_handler = daemon_exit;
     sigemptyset(&sa.sa_mask);
@@ -186,14 +201,16 @@ int main(int argc, char **argv)
     }
 
     /*socket初始化, 主动端 可以省略bind*/
-    socket_init();
+    err = socket_init();
+    if(err)
+    {
+        syslog(LOG_ERR, "socket_init()");
+        exit(1);
+    }
     
     /*获取频道信息*/
-    struct mlib_listentry_st *mlib_list;
-    int mlib_list_size;
-    int err;
-
     err = mlib_getchnlist(&mlib_list, &mlib_list_size);
+    /*if error*/
 
     /*创建节目单线程*/
     int thr_list_create(mlib_list, mlib_list_size);
