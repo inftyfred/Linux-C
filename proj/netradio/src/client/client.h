@@ -1,7 +1,7 @@
 #ifndef CLIENT_H__
 #define CLIENT_H__
 
-#define DEFAULT_PLAYERCMD   "/usr/local/bin/mpg123 - > /dev/null"
+#define DEFAULT_PLAYERCMD   "/usr/bin/ffplay -nodisp -autoexit -i - > /dev/null"
 
 struct client_conf_st
 {

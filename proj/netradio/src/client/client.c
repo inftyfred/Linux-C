@@ -9,9 +9,12 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <errno.h>
+#include <string.h>
 #include <proto.h>
 
 #include "client.h"
+
+#define BUFSIZE (320*1024/8*3)
 
 /*
 * -M    --mgroup    指定多播组
@@ -191,6 +194,7 @@ int main(int argc, char **argv)
         }
 
         //接收节目单信息
+        serveraddr_len = sizeof(serveraddr);
         while(1)
         {
             len = recvfrom(sd, msg_list, MSG_LIST_MAX, 0, (void *)&serveraddr, &serveraddr_len);
@@ -218,7 +222,7 @@ int main(int argc, char **argv)
 
         free(msg_list);
 
-        while(1)
+        while(ret < 1)
         {
             printf("请选择频道： ");
             ret = scanf("%d", &chosenid);
@@ -237,6 +241,11 @@ int main(int argc, char **argv)
             exit(1);
         }
 
+        raddrlen = sizeof(raddr);
+        char rcvbuf[BUFSIZE];
+        uint32_t offset = 0;
+        memset(rcvbuf, 0, BUFSIZE);
+        int bufct = 0;
         while(1)
         {
             len = recvfrom(sd, msg_channel, MSG_CHANNEL_MAX, 0, (void *)&raddr, &raddrlen);
@@ -245,11 +254,11 @@ int main(int argc, char **argv)
                 fprintf(stderr, "ignore: addr not match\n");
                 continue;
             }
-            if(len < sizeof(struct msg_channel_st))
-            {
-                fprintf(stderr, "ignore:msg too small\n");
-                continue;
-            }
+            // if(len < sizeof(struct msg_channel_st))
+            // {
+            //     fprintf(stderr, "ignore:msg too small\n");
+            //     continue;
+            // }
             if(msg_channel->chnid == chosenid)
             {
                 fprintf(stdout, "accept msg : %d received \n", msg_channel->chnid);
@@ -257,6 +266,15 @@ int main(int argc, char **argv)
                 {
                     exit(1);
                 }
+                // memcpy(rcvbuf + offset, msg_channel->data, len - sizeof(chnid_t));
+                // offset += len - sizeof(chnid_t);
+
+                // if (bufct++ % 2 == 0) {
+                //     if (writen(pd[1], rcvbuf, offset) < 0) {
+                //         exit(1);
+                //     }
+                //     offset = 0;
+                // }
             }
         }
 

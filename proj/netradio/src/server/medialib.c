@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 
 
 #include "medialib.h"
@@ -165,12 +166,13 @@ static int open_next(chnid_t chnid)
         {
             //没有新文件了, 列表循环
             channel[chnid].pos = 0;
+            break;
         }
         close(channel[chnid].fd);
 
         //尝试打开新文件
         channel[chnid].fd = \
-        open(channel[chnid].mp3glob.gl_pathv[channel[chnid].pos], O_RDONLY);
+            open(channel[chnid].mp3glob.gl_pathv[channel[chnid].pos], O_RDONLY);
         if(channel[chnid].fd < 0)
         {
             syslog(LOG_WARNING, "open %s failed", channel[chnid].mp3glob.gl_pathv[chnid]);
@@ -202,6 +204,7 @@ ssize_t mlib_readchn(chnid_t chnid, void *buf, size_t size)
         len = pread(channel[chnid].fd, buf, tbfsize, channel[chnid].offset);
         if(len < 0)
         {
+            syslog(LOG_WARNING, "media file %s pread() %s.", channel[chnid].mp3glob.gl_pathv[channel[chnid].pos], strerror(errno));
             //读取下一首
             open_next(chnid);
         }
@@ -211,7 +214,7 @@ ssize_t mlib_readchn(chnid_t chnid, void *buf, size_t size)
             next_ret = open_next(chnid);
             break;
         }
-        else    //读取到了数据
+        else    //读取到了数据 len > 0
         {
             channel[chnid].offset += len;
             struct stat sbuf;

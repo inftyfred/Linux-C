@@ -19,6 +19,8 @@
 
 #include "medialib.h"
 #include "server_conf.h"
+#include "thr_list.h"
+#include "thr_channel.h"
 
 
 /*
@@ -31,6 +33,7 @@
  */
 int serversd;
 struct sockaddr_in sndaddr;
+static struct mlib_listentry_st *mlib_list;
 
  struct server_conf_st server_conf = {
     .rcvport = DEFAULT_RCVPROT, \
@@ -53,6 +56,11 @@ struct sockaddr_in sndaddr;
 
 static void daemon_exit(int s)
 {
+    thr_list_destroy();
+    thr_channel_destroyall();
+    mlib_freechnlist(mlib_list);
+
+    syslog(LOG_WARNING, "signal-%d caught, exit now.", s);
     closelog();
 
     exit(0);
@@ -122,7 +130,7 @@ static int socket_init(void)
     //bind
 
     sndaddr.sin_family = AF_INET;
-    sndaddr.sin_port = htons(aoti(server_conf.rcvport));
+    sndaddr.sin_port = htons(atoi(server_conf.rcvport));
     inet_pton(AF_INET, server_conf.mgroup, &sndaddr.sin_addr.s_addr);
 
     return 0;
@@ -133,7 +141,6 @@ int main(int argc, char **argv)
 {
     int opt;
     struct sigaction sa, osa;
-    struct mlib_listentry_st *mlib_list;
     int mlib_list_size;
     int err;
 
@@ -213,17 +220,20 @@ int main(int argc, char **argv)
     /*if error*/
 
     /*创建节目单线程*/
-    int thr_list_create(mlib_list, mlib_list_size);
+    thr_list_create(mlib_list, mlib_list_size);
     /*if error*/
 
     /*创建频道线程*/
     for(int i = 0; i < mlib_list_size; ++i)
     {
-        thr_channel_create(mlib_list+i);
-        /*if error*/
+        err = thr_channel_create(mlib_list+i);
+        if(err)
+        {
+            fprintf(stderr, "thr_channel_create %s\n", strerror(err));
+            exit(1);
+        }
+        syslog(LOG_DEBUG, "%d channel threads created.", i);
     }
-
-    syslog(LOG_DEBUG, "%d channel threads created.", i);
 
     while(1)
     {
