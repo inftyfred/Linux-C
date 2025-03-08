@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
+#include <signal.h>
 #include <errno.h>
 #include <pthread.h>
 
@@ -25,31 +26,61 @@ static pthread_mutex_t mut_job = PTHREAD_MUTEX_INITIALIZER;
 static pthread_once_t init_once = PTHREAD_ONCE_INIT;
 static pthread_t tid;
 
+
+static void alrm_handle(int sig) {
+    pthread_mutex_lock(&mut_job);
+      for (int i = 0; i < MYTBF_MAX; ++i) {
+        if (job[i] != NULL) {
+          pthread_mutex_lock(&job[i]->mut);
+          job[i]->token += job[i]->cps;
+          if (job[i]->token > job[i]->burst) {
+            job[i]->token = job[i]->burst;
+          }
+          pthread_cond_broadcast(&job[i]->cond); // 惊群
+          pthread_mutex_unlock(&job[i]->mut);
+        }
+      }
+      pthread_mutex_unlock(&mut_job);
+  }
+
 static void *thr_alrm(void *p)
 {
-    int i;
+    struct itimerval tick;
+    memset(&tick, 0, sizeof(tick));
+    tick.it_value.tv_sec = 1;  // sec
+    tick.it_value.tv_usec = 0; // micro sec.
+    tick.it_interval.tv_sec = 1;
+    tick.it_interval.tv_usec = 0;
 
-    while(1)
-    {
-        pthread_mutex_lock(&mut_job);
-        for(i = 0; i < MYTBF_MAX; ++i)
-        {
-            if(job[i] != NULL)
-            {
-                pthread_mutex_lock(&job[i]->mut);
-                job[i]->token += job[i]->cps;
-                if(job[i]->token > job[i]->burst)
-                {
-                    job[i]->token = job[i]->burst;
-                }
-                pthread_cond_broadcast(&job[i]->cond);
-                pthread_mutex_unlock(&job[i]->mut);
-            }
-        }
-        pthread_mutex_unlock(&mut_job);
+    signal(SIGALRM, alrm_handle);
+    setitimer(ITIMER_REAL, &tick, NULL);
 
-        sleep(1);
+    while (1) {
+        pause();
     }
+//     int i;
+
+//     while(1)
+//     {
+//         pthread_mutex_lock(&mut_job);
+//         for(i = 0; i < MYTBF_MAX; ++i)
+//         {
+//             if(job[i] != NULL)
+//             {
+//                 pthread_mutex_lock(&job[i]->mut);
+//                 job[i]->token += job[i]->cps;
+//                 if(job[i]->token > job[i]->burst)
+//                 {
+//                     job[i]->token = job[i]->burst;
+//                 }
+//                 pthread_cond_broadcast(&job[i]->cond);
+//                 pthread_mutex_unlock(&job[i]->mut);
+//             }
+//         }
+//         pthread_mutex_unlock(&mut_job);
+
+//         sleep(1);    //sleep会导致播放错误
+//     }
 }
 
 static void module_unload(void)
@@ -147,6 +178,7 @@ int mytbf_fetchtoken(mytbf_t *ptr, int size)
     }
     n = min(me->token, size);
     me->token -= n;
+    pthread_cond_broadcast(&me->cond);
     pthread_mutex_unlock(&me->mut);
 
     return n;
@@ -162,7 +194,7 @@ int mytbf_returntoken(mytbf_t *ptr, int size)
     {
         me->token = me->burst;
     }
-    pthread_cond_broadcast(&me->cond);
+    //pthread_cond_broadcast(&me->cond);
     pthread_mutex_unlock(&me->mut);
 
     return 0;

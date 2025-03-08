@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <proto.h>
 
 
 #include "medialib.h"
@@ -16,7 +17,7 @@
 
 #define PATHSIZE        1024
 #define LINEBUFFSIZE    1024
-#define MP3_BITRATE     (320 * 1024)    //采样率
+//#define MP3_BITRATE     (320 * 1024)    //采样率
 
 struct channel_context_st
 {
@@ -162,11 +163,12 @@ static int open_next(chnid_t chnid)
     for(int i = 0; i < channel[chnid].mp3glob.gl_pathc; ++i)
     {
         channel[chnid].pos++;
+        syslog(LOG_DEBUG, "chnid:%d, curcur pos:%d.", chnid, channel[chnid].pos);
         if(channel[chnid].pos == channel[chnid].mp3glob.gl_pathc)
         {
             //没有新文件了, 列表循环
+            printf("没有新文件了 列表循环\n");
             channel[chnid].pos = 0;
-            break;
         }
         close(channel[chnid].fd);
 
@@ -180,6 +182,7 @@ static int open_next(chnid_t chnid)
         else
         {
             //打开了新文件
+            printf("打开新文件了\n");
             channel[chnid].offset = 0;
             return 0;
         }
@@ -197,6 +200,7 @@ ssize_t mlib_readchn(chnid_t chnid, void *buf, size_t size)
 
     //获取token
     tbfsize = mytbf_fetchtoken(channel[chnid].tbf, size);
+    //syslog(LOG_DEBUG, "current tbf():%d", tbfsize);
 
     while(1)
     {
@@ -207,6 +211,7 @@ ssize_t mlib_readchn(chnid_t chnid, void *buf, size_t size)
             syslog(LOG_WARNING, "media file %s pread() %s.", channel[chnid].mp3glob.gl_pathv[channel[chnid].pos], strerror(errno));
             //读取下一首
             open_next(chnid);
+            //break;
         }
         else if(len == 0)
         {
@@ -223,14 +228,13 @@ ssize_t mlib_readchn(chnid_t chnid, void *buf, size_t size)
                 (channel[chnid].offset) / (1.0*sbuf.st_size)*100);
             break;
         }
-
-        if(tbfsize - len > 0)
-        {
-            mytbf_returntoken(channel[chnid].tbf, tbfsize - len);
-        }
-        //printf("cur chnid:%d \n", chnid);
-
-        return len;//返回读取到的长度
     }
-    
+
+    if(tbfsize - len > 0)
+    {
+        mytbf_returntoken(channel[chnid].tbf, tbfsize - len);
+    }
+    syslog(LOG_DEBUG, "cur chnid:%d\n", chnid);
+
+    return len;//返回读取到的长度
 }

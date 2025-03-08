@@ -131,7 +131,7 @@ static int socket_init(void)
 
     sndaddr.sin_family = AF_INET;
     sndaddr.sin_port = htons(atoi(server_conf.rcvport));
-    inet_pton(AF_INET, server_conf.mgroup, &sndaddr.sin_addr.s_addr);
+    inet_pton(AF_INET, server_conf.mgroup, &sndaddr.sin_addr);
 
     return 0;
 }
@@ -224,6 +224,8 @@ int main(int argc, char **argv)
     /*if error*/
 
     /*创建频道线程*/
+    syslog(LOG_DEBUG, "list size:%d", mlib_list_size);
+
     for(int i = 0; i < mlib_list_size; ++i)
     {
         err = thr_channel_create(mlib_list+i);
@@ -232,7 +234,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "thr_channel_create %s\n", strerror(err));
             exit(1);
         }
-        syslog(LOG_DEBUG, "%d channel threads created.", i);
+        //syslog(LOG_DEBUG, "%d channel threads created.", i);
     }
 
     while(1)

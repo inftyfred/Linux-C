@@ -13,6 +13,7 @@
 #include <proto.h>
 
 #include "thr_channel.h"
+#include "medialib.h"
 #include "server_conf.h"
 
 
@@ -42,11 +43,17 @@ static void *thr_channel_snder(void *ptr)
 
     while(1)
     {
-        len = mlib_readchn(ent->chnid, sbufp->data, MAX_DATA);
-
+        len = mlib_readchn(ent->chnid, sbufp->data, 320*1024/8); //MAX_DATA  MP3_BITRATE / 8 //
+        if(len < 0)
+        {
+            break;
+        }
+        syslog(LOG_DEBUG, "mlib_readchn() len: %d.", len);
+        //syslog(LOG_DEBUG, "mlib_readchn() len: %d", );
         if(sendto(serversd, sbufp, len + sizeof(chnid_t), 0, (void *)&sndaddr, sizeof(sndaddr)) < 0)
         {
             syslog(LOG_ERR, "thr_channel(%d) sendto():%s\n", ent->chnid, strerror(errno));
+            break;
         }
 
         sched_yield();//可有可无
@@ -55,12 +62,11 @@ static void *thr_channel_snder(void *ptr)
     pthread_exit(NULL);
 }
 
-
 int thr_channel_create(struct mlib_listentry_st *ptr)
 {
     int err;
 
-    err = pthread_create(&thr_channel[tid_nextpos].tid, NULL, thr_channel_snder, (void *)ptr);
+    err = pthread_create(&thr_channel[tid_nextpos].tid, NULL, thr_channel_snder, ptr);
     if(err)
     {
         syslog(LOG_WARNING, "pthread_create() failed.");

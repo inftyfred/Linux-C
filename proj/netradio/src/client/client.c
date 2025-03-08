@@ -254,11 +254,11 @@ int main(int argc, char **argv)
                 fprintf(stderr, "ignore: addr not match\n");
                 continue;
             }
-            // if(len < sizeof(struct msg_channel_st))
-            // {
-            //     fprintf(stderr, "ignore:msg too small\n");
-            //     continue;
-            // }
+            if(len < sizeof(struct msg_channel_st))
+            {
+                fprintf(stderr, "ignore:msg too small\n");
+                continue;
+            }
             if(msg_channel->chnid == chosenid)
             {
                 fprintf(stdout, "accept msg : %d received \n", msg_channel->chnid);

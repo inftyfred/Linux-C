@@ -6,7 +6,7 @@
 #define DEFAULT_MGROUP      "224.2.2.2" //组播地址（D类地址）
 #define DEFAULT_RCVPROT     "1989"
 
-#define CHNNR               100
+#define CHNNR               200
 #define LISTCHNID           0
 #define MINCHNID            1
 #define MAXCHNID            (MINCHNID+CHNNR-1)

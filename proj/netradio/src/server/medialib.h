@@ -2,6 +2,9 @@
 #define MEDIALIB_H__
 
 #include <proto.h>
+#include <stdio.h>
+
+#define MP3_BITRATE     (320 * 1024)    //采样率
 
 struct mlib_listentry_st
 {
